@@ -1,0 +1,28 @@
+# Usage: 
+#    ansible-playbook -e registry_domain=www.yourdomain.com generate-ssl-certs.yml
+#
+- name: Playbook to generate  SSL/TLS certs signed by the CA stored in cacerts/
+  hosts: localhost
+  vars:
+    registry_domain: "www.test.example.com"
+  tasks:
+  - name: Create certs subdirectory
+    file:
+      state: directory
+      path: certs
+  - name: Generate an OpenSSL private key with the default values (4096 bits, RSA)
+    openssl_privatekey:
+      path: certs/{{ registry_domain }}.key
+  - name: Generate an OpenSSL Certificate Signing Request
+    openssl_csr:
+      path: certs/{{ registry_domain}}.csr
+      privatekey_path: certs/{{ registry_domain}}.key
+      common_name: "{{ registry_domain }}"
+  - name: Generate a Self Signed OpenSSL certificate
+    openssl_certificate:
+      path: certs/{{ registry_domain }}.crt
+      ownca_path: cacerts/bk-ca-cert.pem
+      ownca_privatekey_path: cacerts/bk-ca-key.pem
+      ownca_privatekey_passphrase: 'redhat'
+      csr_path: certs/{{ registry_domain }}.csr
+      provider: ownca
